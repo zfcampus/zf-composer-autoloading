@@ -26,7 +26,11 @@ Usage
 -----
 
 ```bash
-$ ./vendor/bin/autoload-module-via-composer [help|--help|-h] [--composer|-c composer path] [--type|-t psr0|psr4] modulename
+$ ./vendor/bin/autoload-module-via-composer \
+> [help|--help|-h] \
+> [--composer|-c <composer path>] \
+> [--type|-t <psr0|psr4>] \
+> modulename
 ```
 
 ### Arguments

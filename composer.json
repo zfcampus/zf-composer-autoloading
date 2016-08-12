@@ -24,6 +24,11 @@
     "require-dev": {
         "squizlabs/php_codesniffer": "^2.6.2"
     },
+    "autoload": {
+        "psr-4": {
+            "ZF\\ComposerAutoloading\\": "src/"
+        }
+    },
     "bin": [
         "bin/autoload-module-via-composer"
     ],

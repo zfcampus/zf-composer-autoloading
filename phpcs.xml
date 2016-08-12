@@ -22,5 +22,6 @@
     </rule>
 
     <!-- Paths to check -->
-    <file>gin</file>
+    <file>bin/autoload-module-via-composer</file>
+    <file>src</file>
 </ruleset>
