@@ -1,0 +1,34 @@
+{
+    "name": "zfcampus/zf-composer-autoloading",
+    "description": "Sets up Composer-based autoloading for your Zend Framework modules",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "autoloading",
+        "console",
+        "framework",
+        "zendframework",
+        "zf2"
+    ],
+    "homepage": "http://apigility.org/",
+    "support": {
+        "irc": "irc://irc.freenode.net/apigility",
+        "source": "https://github.com/zfcampus/zf-composer-autoloading",
+        "issues": "https://github.com/zfcampus/zf-composer-autoloading/issues"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^2.6.2"
+    },
+    "bin": [
+        "bin/autoload-module-via-composer"
+    ],
+    "scripts": {
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf"
+    }
+}
