@@ -30,6 +30,7 @@ $ ./vendor/bin/autoload-module-via-composer \
 > [help|--help|-h] \
 > [--composer|-c <composer path>] \
 > [--type|-t <psr0|psr4>] \
+> [--modules-path|-p <path>] \
 > modulename
 ```
 
@@ -41,6 +42,8 @@ $ ./vendor/bin/autoload-module-via-composer \
 - `--type` and `-t` allow you to specify the autoloading type, which should be
   one of `psr-0` or `psr-4`; if not provided, the script will attempt to
   auto-determine the value based on the directory structure of the module.
+- `--modules-path` and `-p` allow you to specify the path to the modules
+  directory; default to `module`.
 - `modulename` is the name of the module for which to setup Composer-based
   autoloading.
 
@@ -80,4 +83,11 @@ Examples
 
    ```bash
    $ ./vendor/bin/autoload-module-via-composer -c composer.phar Status
+   ```
+
+1. Specify the path to modules directory, and generate a Composer autoloading
+   entry.
+
+   ```bash
+   $ ./vendor/bin/autoload-module-via-composer -p src Status
    ```
