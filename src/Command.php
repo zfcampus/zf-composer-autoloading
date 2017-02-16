@@ -1,7 +1,7 @@
 <?php
 /**
  * @license   http://opensource.org/licenses/BSD-3-Clause BSD-3-Clause
- * @copyright Copyright (c) 2016 Zend Technologies USA Inc. (http://www.zend.com)
+ * @copyright Copyright (c) 2016-2017 Zend Technologies USA Inc. (http://www.zend.com)
  */
 
 namespace ZF\ComposerAutoloading;
@@ -21,6 +21,7 @@ class Command
     private $defaults = [
         'composer' => 'composer',
         'type' => false,
+        'modulesPath' => 'module',
     ];
 
     /**
@@ -42,6 +43,11 @@ class Command
      * @var string Filesystem path to module
      */
     private $modulePath;
+
+    /**
+     * @var string Filesystem path to modules directory
+     */
+    private $modulesPath;
 
     /**
      * @var string Working path
@@ -105,12 +111,13 @@ class Command
      */
     private function help($stream = STDOUT)
     {
+        // @codingStandardsIgnoreStart
         $message = <<<'EOH'
 Provide Composer-based autoloading for a Zend Framework module.
 
 Usage:
 
-  autoload-module-via-composer [help|--help|-h] [--composer|-c <composer path>] [--type|-t psr0|psr4] modulename
+  autoload-module-via-composer [help|--help|-h] [--composer|-c <composer path>] [--type|-t psr0|psr4] [--modules-path|-p <path>] modulename
 
 Arguments:
 
@@ -122,10 +129,13 @@ Arguments:
                                         autodetermine the type, default to
                                         PSR-0 autoloading if unable to
                                         determine it.
+  - [--modules-path|-p <path>]          Provide the path to the modules
+                                        directory; default to "module"
   - modulename                          The name of the module for which
                                         to provide composer autoloading.
 
 EOH;
+        // @codingStandardsIgnoreEnd
 
         $message = strtr($message, "\n", PHP_EOL);
 
@@ -204,8 +214,9 @@ EOH;
      * - No unexpected arguments
      * - --composer/-c argument, if present, represents a valid composer binary
      * - --type/-t argument, if present, is valid
+     * - --modules-path/-p argument, if present, represents a valid path to modules directory
      *
-     * Sets the module, modulePath, composer, and type properties.
+     * Sets the module, modulePath, composer, type and modulesPath properties.
      *
      * @param array $args
      * @return bool Boolean false if invalid arguments detected
@@ -217,16 +228,10 @@ EOH;
 
         // Get module argument (always expected in last position)
         $this->module = $module = array_pop($args);
-        $this->modulePath = $modulePath = sprintf('%s/module/%s', $this->path, $module);
-
-        if (! is_dir($modulePath)) {
-            fwrite(STDERR, sprintf('Could not locate module "%s" in path "%s"%s', $module, $modulePath, PHP_EOL));
-            return false;
-        }
 
         // Parse arguments
         if (empty($args)) {
-            return true;
+            return $this->checkModulePath();
         }
 
         $args = array_values($args);
@@ -267,11 +272,46 @@ EOH;
                     $this->type = preg_replace('/^(psr)([04])$/', '$1-$2', $this->type);
                     break;
 
+                case '--modules-path':
+                    // fall-through
+                case '-p':
+                    $this->modulesPath = preg_replace('/^\.\//', '', str_replace('\\', '/', $args[$i + 1]));
+                    if (! is_dir(sprintf('%s/%s', $this->path, $this->modulesPath))) {
+                        fwrite(
+                            STDERR,
+                            'Provided path to modules directory does not exist or is not a directory'
+                            . PHP_EOL . PHP_EOL
+                        );
+                        $this->help(STDERR);
+                        return false;
+                    }
+                    break;
+
                 default:
                     fwrite(STDERR, sprintf('Unknown option "%s" provided%s', $args[$i], str_repeat(PHP_EOL, 2)));
                     $this->help(STDERR);
                     return false;
             }
+        }
+
+        return $this->checkModulePath();
+    }
+
+    /**
+     * Checks if the module path exists and is a directory.
+     *
+     * @return bool
+     */
+    private function checkModulePath()
+    {
+        $this->modulePath = sprintf('%s/%s/%s', $this->path, $this->modulesPath, $this->module);
+
+        if (! is_dir($this->modulePath)) {
+            fwrite(
+                STDERR,
+                sprintf('Could not locate module "%s" in path "%s"%s', $this->module, $this->modulePath, PHP_EOL)
+            );
+            return false;
         }
 
         return true;
