@@ -5,10 +5,15 @@
  *
  * Usage:
  *
- *     autoload-module-via-composer [help|--help|-h] [--composer|-c <composer path>] [--type|-t <psr0|psr4>] modulename
+ *     autoload-module-via-composer
+ *         [help|--help|-h]
+ *         [--composer|-c <composer path>]
+ *         [--type|-t <psr0|psr4>]
+ *         [--modules-path|-p <path>]
+ *         modulename
  *
  * @license   http://opensource.org/licenses/BSD-3-Clause BSD-3-Clause
- * @copyright Copyright (c) 2016 Zend Technologies USA Inc. (http://www.zend.com)
+ * @copyright Copyright (c) 2016-2017 Zend Technologies USA Inc. (http://www.zend.com)
  */
 
 namespace ZF\ComposerAutoloading;
