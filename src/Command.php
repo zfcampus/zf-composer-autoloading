@@ -244,8 +244,6 @@ EOH;
         }
 
         for ($i = 0; $i < $count; $i += 2) {
-            $flag = $args[$i];
-
             switch ($args[$i]) {
                 case '--composer':
                     // fall-through
