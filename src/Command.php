@@ -230,10 +230,6 @@ EOH;
         $this->module = $module = array_pop($args);
 
         // Parse arguments
-        if (empty($args)) {
-            return $this->checkModulePath();
-        }
-
         $args = array_values($args);
         if (0 !== $args % 2) {
             fwrite(STDERR, 'Invalid arguments' . PHP_EOL . PHP_EOL);
