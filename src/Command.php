@@ -235,13 +235,15 @@ EOH;
         }
 
         $args = array_values($args);
-        if (0 !== $args % 2) {
+        $count = count($args);
+
+        if (0 !== $count % 2) {
             fwrite(STDERR, 'Invalid arguments' . PHP_EOL . PHP_EOL);
             $this->help(STDERR);
             return false;
         }
 
-        for ($i = 0; $i < count($args); $i += 2) {
+        for ($i = 0; $i < $count; $i += 2) {
             $flag = $args[$i];
 
             switch ($args[$i]) {
