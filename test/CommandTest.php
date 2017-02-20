@@ -39,7 +39,7 @@ class CommandTest extends TestCase
             ->shouldNotBeCalled();
     }
 
-    public function helpRequests()
+    public function helpRequest()
     {
         return [
             'no-args'                     => [[]],
@@ -54,7 +54,7 @@ class CommandTest extends TestCase
     }
 
     /**
-     * @dataProvider helpRequests
+     * @dataProvider helpRequest
      *
      * @param string[] $args
      */
