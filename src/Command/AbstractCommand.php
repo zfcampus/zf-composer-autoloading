@@ -166,7 +166,7 @@ abstract class AbstractCommand
         file_put_contents($this->composerJsonFile, json_encode(
             $content,
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-        ));
+        ) . "\n");
 
         $command = sprintf('%s dump-autoload', $this->composer);
         system($command);

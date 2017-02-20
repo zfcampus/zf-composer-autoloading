@@ -589,6 +589,17 @@ class CommandTest extends TestCase
      */
     public function testSuccessMessageOnEnableAndModuleClassFileMoved($action, $modulesPath, $type)
     {
+        $expectedComposerJson = <<< 'EOH'
+{
+    "autoload": {
+        "%s": {
+            "App\\": "%s/App/src/"
+        }
+    }
+}
+
+EOH;
+
         $expectedModuleFileContent = <<< 'EOH'
 <?php
 
@@ -651,6 +662,10 @@ EOH;
         $newModuleFile = vfsStream::url(sprintf('project/%s/App/src/Module.php', $modulesPath));
         $this->assertFileExists($newModuleFile);
         $this->assertEquals($expectedModuleFileContent, file_get_contents($newModuleFile));
+        $this->assertEquals(
+            sprintf($expectedComposerJson, $type === 'psr0' ? 'psr-0' : 'psr-4', $modulesPath),
+            file_get_contents(vfsStream::url('project/composer.json'))
+        );
     }
 
     /**
