@@ -199,7 +199,7 @@ class Command
      * Sets the module, modulePath, composer, type and modulesPath properties.
      *
      * @param array $args
-     * @return true If all arguments are valid.
+     * @return void
      * @throws Exception\InvalidArgumentException If invalid argument detected.
      */
     private function parseArguments(array $args)
@@ -255,13 +255,13 @@ class Command
 
         $this->modulePath = sprintf('%s/%s/%s', $this->projectDir, $this->modulesPath, $this->module);
 
-        return $this->checkArguments();
+        $this->checkArguments();
     }
 
     /**
      * Checks if arguments of the script are correct.
      *
-     * @return true
+     * @return void
      * @throws Exception\InvalidArgumentException
      */
     private function checkArguments()
@@ -289,7 +289,5 @@ class Command
                 $this->modulePath
             ));
         }
-
-        return true;
     }
 }
