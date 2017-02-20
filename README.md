@@ -7,11 +7,14 @@ Introduction
 ------------
 
 The `zf-composer-autoloading` package provides a single vendor binary,
-`autoload-module-via-composer`, which will:
+`composer-autoloading`, which provides following commands:
 
-- Add the named module to the project autoloading rules defined in
-  `composer.json`, and
-- Dump the autoloading rules on completion.
+- `enable` - add the named module to the project autoloading rules
+  defined in `composer.json`, and
+- `disable` - remove autoloading rules for the module from
+  `composer.json`
+
+Both command also dump the autoloading rules on completion.
 
 Installation
 ------------
@@ -26,13 +29,19 @@ Usage
 -----
 
 ```bash
-$ ./vendor/bin/autoload-module-via-composer \
+$ ./vendor/bin/composer-autoloading \
+> enable|disable \
 > [help|--help|-h] \
 > [--composer|-c <composer path>] \
 > [--type|-t <psr0|psr4>] \
 > [--modules-path|-p <path>] \
 > modulename
 ```
+
+### Commands
+
+- `enable` - enables composer-based autoloading for the module.
+- `disable` - disables composer-based autoloading for the module.
 
 ### Arguments
 
@@ -52,42 +61,50 @@ $ ./vendor/bin/autoload-module-via-composer \
 - Modules are assumed to have a `src/` directory. If they do not, the
   autoloading generated will be incorrect.
 - If unable to determine the autoloading type, PSR-0 will be assumed.
-- If the `Module` class file for the module is in the module root, it will be
-  moved to the module's `src/` directory.
+- On enabling autoloading if the `Module` class file for the module
+  is in the module root, it will be moved to the module's `src/` directory.
 
 Examples
 --------
 
 1. Autodetect a module's autoloading type, and generate a Composer autoloading
-   entry.
+   entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/autoload-module-via-composer Status
+   $ ./vendor/bin/composer-autoloading enable Status
+   ```
+   
+1. Autodetect a module's autoloading type, and remove a Composer autoloading
+   entry for "Status" module.
+   
+   ```bash
+   $ ./vendor/bin/composer-autoloading disable Status
    ```
 
 1. Specify PSR-0 for the module type, and generate a Composer autoloading
-   entry.
+   entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/autoload-module-via-composer --type psr0 Status
+   $ ./vendor/bin/composer-autoloading enable --type psr0 Status
    ```
 
 1. Specify PSR-4 for the module type, and generate a Composer autoloading
-   entry.
+   entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/autoload-module-via-composer --type psr4 Status
+   $ ./vendor/bin/composer-autoloading enable --type psr4 Status
    ```
 
-1. Specify the path to the composer binary when generating autoloading entries:
+1. Specify the path to the composer binary when generating autoloading entry
+   for "Status" module:
 
    ```bash
-   $ ./vendor/bin/autoload-module-via-composer -c composer.phar Status
+   $ ./vendor/bin/composer-autoloading enable -c composer.phar Status
    ```
 
 1. Specify the path to modules directory, and generate a Composer autoloading
-   entry.
+   entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/autoload-module-via-composer -p src Status
+   $ ./vendor/bin/composer-autoloading enable -p src Status
    ```
