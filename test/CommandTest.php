@@ -837,6 +837,7 @@ EOH;
      * @param vfsStreamContainer $modulesDir
      * @param string $name
      * @param string $type
+     * @return void
      */
     protected function setUpModule(vfsStreamContainer $modulesDir, $name, $type)
     {
@@ -846,6 +847,7 @@ EOH;
     /**
      * @param vfsStreamContainer $dir
      * @param array|null $content
+     * @return void
      */
     protected function setUpComposerJson(vfsStreamContainer $dir, array $content = null)
     {
