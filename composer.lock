@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "c2a37cc0752ffd04554765ce5f519604",
+    "content-hash": "06c14a2f2fc29fd12b4db007e6970483",
     "packages": [
         {
             "name": "zendframework/zend-stdlib",
