@@ -67,6 +67,57 @@ class CommandTest extends TestCase
         $this->assertEquals(0, $command->process($args));
     }
 
+    public function argument()
+    {
+        return [
+            // $action, $argument,        $value,          $propertyName, $expectedValue
+            ['enable',  '--composer',     'foo/bar',       'composer',    'foo/bar'],
+            ['enable',  '-c',             'bar/baz',       'composer',    'bar/baz'],
+            ['enable',  '--modules-path', './foo/modules', 'modulesPath', 'foo/modules'],
+            ['enable',  '-p',             'bar\path',      'modulesPath', 'bar/path'],
+            ['enable',  '--type',         'psr0',          'type',        'psr-0'],
+            ['enable',  '--type',         'psr0',          'type',        'psr-0'],
+            ['enable',  '-t',             'psr4',          'type',        'psr-4'],
+            ['enable',  '-t',             'psr4',          'type',        'psr-4'],
+            ['disable', '--composer',     'foo/bar',       'composer',    'foo/bar'],
+            ['disable', '-c',             'bar/baz',       'composer',    'bar/baz'],
+            ['disable', '--modules-path', 'foo/modules',   'modulesPath', 'foo/modules'],
+            ['disable', '-p',             'bar/path',      'modulesPath', 'bar/path'],
+            ['disable', '--type',         'psr0',          'type',        'psr-0'],
+            ['disable', '--type',         'psr0',          'type',        'psr-0'],
+            ['disable', '-t',             'psr4',          'type',        'psr-4'],
+            ['disable', '-t',             'psr4',          'type',        'psr-4'],
+        ];
+    }
+
+    /**
+     * @dataProvider argument
+     *
+     * @param string $action
+     * @param string $argument
+     * @param string $value
+     * @param string $propertyName
+     * @param string $expectedValue
+     */
+    public function testArgumentIsSetAndHasExpectedValue($action, $argument, $value, $propertyName, $expectedValue)
+    {
+        $console = $this->prophesize(ConsoleHelper::class);
+        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
+        $command->process([$action, $argument, $value, 'module-name']);
+
+        $this->assertAttributeSame($expectedValue, $propertyName, $command);
+    }
+
+    public function testDefaultArgumentsValues()
+    {
+        $console = $this->prophesize(ConsoleHelper::class);
+        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
+
+        $this->assertAttributeSame('module', 'modulesPath', $command);
+        $this->assertAttributeSame('composer', 'composer', $command);
+        $this->assertAttributeSame(null, 'type', $command);
+    }
+
     public function testUnknownCommandEmitsHelpToStderrWithErrorMessage()
     {
         $console = $this->prophesize(ConsoleHelper::class);
