@@ -11,6 +11,11 @@ use ZF\ComposerAutoloading\Exception;
 class Enable extends AbstractCommand
 {
     /**
+     * @var bool
+     */
+    private $moveModuleClass = true;
+
+    /**
      * @var null|string[]
      */
     private $movedModuleClass;
@@ -29,7 +34,9 @@ class Enable extends AbstractCommand
             return false;
         }
 
-        $this->moveModuleClassFile();
+        if ($this->moveModuleClass) {
+            $this->moveModuleClassFile();
+        }
 
         $composerPackage = $this->composerPackage;
         $type = $this->type;
@@ -69,6 +76,20 @@ class Enable extends AbstractCommand
         $this->movedModuleClass = [$moduleClassFile => $srcModuleClassFile];
     }
 
+    /**
+     * @param bool $value
+     * @return $this
+     */
+    public function setMoveModuleClass($value)
+    {
+        $this->moveModuleClass = (bool) $value;
+
+        return $this;
+    }
+
+    /**
+     * @return null|string[]
+     */
     public function getMovedModuleClass()
     {
         return $this->movedModuleClass;
