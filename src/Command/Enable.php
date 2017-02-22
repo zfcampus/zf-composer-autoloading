@@ -6,8 +6,6 @@
 
 namespace ZF\ComposerAutoloading\Command;
 
-use ZF\ComposerAutoloading\Exception;
-
 class Enable extends AbstractCommand
 {
     /**
@@ -25,10 +23,9 @@ class Enable extends AbstractCommand
      *
      * Writes new rules to composer.json, and executes composer dump-autoload.
      *
-     * @return false|string
-     * @throws Exception\RuntimeException
+     * {@inheritdoc}
      */
-    protected function process()
+    protected function execute()
     {
         if ($this->autoloadingRulesExist()) {
             return false;

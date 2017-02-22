@@ -18,6 +18,14 @@ class Command
     private $projectDir = '.';
 
     /**
+     * @var string[]
+     */
+    private $commands = [
+        'disable' => Command\Disable::class,
+        'enable' => Command\Enable::class,
+    ];
+
+    /**
      * @var array
      */
     private $helpArgs = ['--help', '-h', 'help'];
@@ -90,7 +98,7 @@ class Command
         $isEnableCommand = $instance instanceof Command\Enable;
 
         try {
-            if ($instance($this->module, $this->type)) {
+            if ($instance->process($this->module, $this->type)) {
                 if ($isEnableCommand && ($movedModuleClass = $instance->getMovedModuleClass())) {
                     $src = key($movedModuleClass);
                     $dest = reset($movedModuleClass);
@@ -133,11 +141,8 @@ class Command
      */
     private function getCommand($cmd)
     {
-        switch ($cmd) {
-            case 'enable':
-                return Command\Enable::class;
-            case 'disable':
-                return Command\Disable::class;
+        if (isset($this->commands[$cmd])) {
+            return $this->commands[$cmd];
         }
 
         return false;

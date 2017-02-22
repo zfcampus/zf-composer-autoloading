@@ -6,8 +6,6 @@
 
 namespace ZF\ComposerAutoloading\Command;
 
-use ZF\ComposerAutoloading\Exception;
-
 class Disable extends AbstractCommand
 {
     /**
@@ -15,10 +13,9 @@ class Disable extends AbstractCommand
      *
      * Removes autoloading rule from composer.json, and executes composer dump-autoload.
      *
-     * @return false|string
-     * @throws Exception\RuntimeException
+     * {@inheritdoc}
      */
-    protected function process()
+    protected function execute()
     {
         if (! $this->autoloadingRulesExist()) {
             return false;

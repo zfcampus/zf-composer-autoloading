@@ -6,37 +6,41 @@
 
 namespace ZFTest\ComposerAutoloading;
 
+use Mockery;
 use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamContainer;
+use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
+use Prophecy\Prophecy\ObjectProphecy;
 use Zend\Stdlib\ConsoleHelper;
 use ZF\ComposerAutoloading\Command;
+use ZF\ComposerAutoloading\Exception;
 
 class CommandTest extends TestCase
 {
+    use ProjectSetupTrait;
+
     const TEST_COMMAND_NAME = 'composer-autoloading';
 
-    public function assertHelpOutput($console, $resource = STDOUT, $command = self::TEST_COMMAND_NAME)
-    {
-        $console
-            ->writeLine(
-                Argument::containingString($command . ' [command] [options] modulename'),
-                true,
-                $resource
-            )
-            ->shouldBeCalled();
-    }
+    /** @var vfsStreamDirectory */
+    private $dir;
 
-    public function assertNotHelpOutput($console, $resource = STDOUT, $command = self::TEST_COMMAND_NAME)
+    /** @var ConsoleHelper|ObjectProphecy */
+    private $console;
+
+    /** @var Command */
+    private $command;
+
+    protected function setUp()
     {
-        $console
-            ->writeLine(
-                Argument::containingString($command . ' [command] [options] modulename'),
-                true,
-                $resource
-            )
-            ->shouldNotBeCalled();
+        parent::setUp();
+
+        $this->dir = vfsStream::setup('project');
+
+        $this->console = $this->prophesize(ConsoleHelper::class);
+
+        $this->command = new Command(self::TEST_COMMAND_NAME, $this->console->reveal());
+        $this->setProjectDir($this->command, $this->dir->url());
     }
 
     public function helpRequest()
@@ -60,11 +64,8 @@ class CommandTest extends TestCase
      */
     public function testHelpRequestsEmitHelpToStdout(array $args)
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $this->assertHelpOutput($console);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->assertEquals(0, $command->process($args));
+        $this->assertHelpOutput();
+        $this->assertEquals(0, $this->command->process($args));
     }
 
     public function argument()
@@ -101,35 +102,28 @@ class CommandTest extends TestCase
      */
     public function testArgumentIsSetAndHasExpectedValue($action, $argument, $value, $propertyName, $expectedValue)
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $command->process([$action, $argument, $value, 'module-name']);
+        $this->command->process([$action, $argument, $value, 'module-name']);
 
-        $this->assertAttributeSame($expectedValue, $propertyName, $command);
+        $this->assertAttributeSame($expectedValue, $propertyName, $this->command);
     }
 
     public function testDefaultArgumentsValues()
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-
-        $this->assertAttributeSame('module', 'modulesPath', $command);
-        $this->assertAttributeSame('composer', 'composer', $command);
-        $this->assertAttributeSame(null, 'type', $command);
+        $this->assertAttributeSame('module', 'modulesPath', $this->command);
+        $this->assertAttributeSame('composer', 'composer', $this->command);
+        $this->assertAttributeSame(null, 'type', $this->command);
     }
 
     public function testUnknownCommandEmitsHelpToStderrWithErrorMessage()
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Unknown command')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->assertEquals(1, $command->process(['foo', 'bar']));
+        $this->assertEquals(1, $this->command->process(['foo', 'bar']));
     }
 
     public function action()
@@ -147,16 +141,14 @@ class CommandTest extends TestCase
      */
     public function testCommandErrorIfNoModuleNameProvided($action)
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Invalid module name')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->assertEquals(1, $command->process([$action]));
+        $this->assertEquals(1, $this->command->process([$action]));
     }
 
     /**
@@ -166,16 +158,14 @@ class CommandTest extends TestCase
      */
     public function testCommandErrorIfInvalidNumberOfArgumentsProvided($action)
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Invalid arguments')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->assertEquals(1, $command->process([$action, 'invalid', 'module-name']));
+        $this->assertEquals(1, $this->command->process([$action, 'invalid', 'module-name']));
     }
 
     /**
@@ -185,16 +175,14 @@ class CommandTest extends TestCase
      */
     public function testCommandErrorIfUnknownArgumentProvided($action)
     {
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Unknown argument "--invalid" provided')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->assertEquals(1, $command->process([$action, '--invalid', 'value', 'module-name']));
+        $this->assertEquals(1, $this->command->process([$action, '--invalid', 'value', 'module-name']));
     }
 
     /**
@@ -204,19 +192,14 @@ class CommandTest extends TestCase
      */
     public function testCommandErrorIfModulesDirectoryDoesNotExist($action)
     {
-        vfsStream::setup('project');
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Unable to determine modules directory')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $this->assertEquals(1, $command->process([$action, 'module-name']));
+        $this->assertEquals(1, $this->command->process([$action, 'module-name']));
     }
 
     /**
@@ -226,83 +209,40 @@ class CommandTest extends TestCase
      */
     public function testCommandErrorIfModuleDoesNotExist($action)
     {
-        $dir = vfsStream::setup('project');
-        vfsStream::newDirectory('module')->at($dir);
+        vfsStream::newDirectory('module')->at($this->dir);
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Could not locate module "module-name"')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $this->assertEquals(1, $command->process([$action, 'module-name']));
+        $this->assertEquals(1, $this->command->process([$action, 'module-name']));
     }
 
     /**
-     * @dataProvider action
+     * @runInSeparateProcess
      *
-     * @param string $action
-     */
-    public function testCommandErrorIfComposerDoesNotExist($action)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory('module')->at($dir);
-        $this->setUpModule($modulesDir, 'module-name', 'psr4');
-        $this->setUpComposerJson(
-            $dir,
-            $action === 'enable'
-                ? []
-                : ['autoload' => ['psr-4' => ['module-name\\' => 'module/path/src']]]
-        );
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeErrorMessage(
-                Argument::containingString('Unable to determine composer binary')
-            )
-            ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, $dir->url());
-        $result = $command->process([$action, '--composer', vfsStream::url('composer'), 'module-name']);
-        $this->assertEquals(1, $result);
-    }
-
-    /**
      * @dataProvider action
      *
      * @param string $action
      */
     public function testCommandErrorIfComposerIsNotExecutable($action)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory('module')->at($dir);
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
         $this->setUpModule($modulesDir, 'module-name', 'psr4');
-        $this->setUpComposerJson(
-            $dir,
-            $action === 'enable'
-                ? []
-                : ['autoload' => ['psr-4' => ['module-name\\' => 'module/path/src']]]
-        );
-        vfsStream::newFile('composer')->at($dir);
+        $this->setUpComposerJson($this->dir, []);
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Unable to determine composer binary')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
+        $this->assertComposerBinaryNotExecutable();
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, $dir->url());
-        $result = $command->process([$action, '--composer', vfsStream::url('project/composer'), 'module-name']);
-        $this->assertEquals(1, $result);
+        $this->assertEquals(1, $this->command->process([$action, 'module-name']));
     }
 
     public function invalidType()
@@ -311,7 +251,7 @@ class CommandTest extends TestCase
             'enable-invalid-psr-0'  => ['enable', 'psr-0'],
             'enable-invalid-psr-4'  => ['enable', 'psr-4'],
             'disable-invalid-psr-0' => ['disable', 'psr-0'],
-            'disable-invalid-psr-4' => ['disable', 'psr-0'],
+            'disable-invalid-psr-4' => ['disable', 'psr-4'],
         ];
     }
 
@@ -323,179 +263,76 @@ class CommandTest extends TestCase
      */
     public function testCommandErrorIfInvalidTypeProvided($action, $type)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory('module')->at($dir);
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
         $this->setUpModule($modulesDir, 'module-name', 'psr4');
-        $this->setUpComposerJson(
-            $dir,
-            $action === 'enable'
-                ? []
-                : ['autoload' => ['psr-4' => ['module-name\\' => 'module/path/src']]]
-        );
+        $this->setUpComposerJson($this->dir, []);
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeErrorMessage(
                 Argument::containingString('Invalid type provided; must be one of psr0 or psr4')
             )
             ->shouldBeCalled();
-        $this->assertHelpOutput($console, STDERR);
+        $this->assertHelpOutput(STDERR);
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, $dir->url());
-        $result = $command->process([$action, '--type', $type,'module-name']);
+        $result = $this->command->process([$action, '--type', $type, 'module-name']);
         $this->assertEquals(1, $result);
     }
 
-    /**
-     * @dataProvider validEnable
-     * @dataProvider validDisable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testErrorIfComposerJsonDoesNotExist($action, $modulesPath, $type)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeErrorMessage(
-                Argument::containingString('composer.json file does not exist')
-            )
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--type', $type, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(1, $result);
-    }
-
-    /**
-     * @dataProvider validEnable
-     * @dataProvider validDisable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testErrorIfComposerJsonIsNotWritable($action, $modulesPath, $type)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        vfsStream::newFile('composer.json', 0444)->at($dir);
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeErrorMessage(
-                Argument::containingString('composer.json file is not writable')
-            )
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--type', $type, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(1, $result);
-    }
-
-    /**
-     * @dataProvider validEnable
-     * @dataProvider validDisable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testErrorIfComposerJsonHasInvalidContent($action, $modulesPath, $type)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        vfsStream::newFile('composer.json')
-            ->withContent('invalid content')
-            ->at($dir);
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeErrorMessage(
-                Argument::containingString('Error parsing composer.json file')
-            )
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--type', $type, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(1, $result);
-    }
-
-    /**
-     * @dataProvider validEnable
-     * @dataProvider validDisable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testErrorIfComposerJsonHasNoContent($action, $modulesPath, $type)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson($dir);
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeErrorMessage(
-                Argument::containingString('The composer.json file was empty')
-            )
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--type', $type, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(1, $result);
-    }
-
-    /**
-     * @dataProvider action
-     *
-     * @param string $action
-     */
-    public function testErrorIfCannotDetermineModuleType($action)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory('module')->at($dir);
-        vfsStream::newDirectory('App')->at($modulesDir);
-        $this->setUpComposerJson($dir, []);
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeErrorMessage(
-                Argument::containingString('Unable to determine autoloading type; no src directory found in module')
-            )
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, 'App']);
-        $this->assertEquals(1, $result);
-    }
-
-    public function validEnable()
+    public function type()
     {
         return [
-            'enable-psr0' => ['enable', 'module', 'psr0'],
-            'enable-psr4' => ['enable', 'src', 'psr4'],
+            'psr-0' => ['psr0'],
+            'psr-4' => ['psr4'],
         ];
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     *
+     * @dataProvider type
+     *
+     * @param string $type
+     */
+    public function testErrorIfComposerJsonDoesNotExist($type)
+    {
+        Mockery::mock('overload:' . MyTestingCommand::class)
+            ->shouldReceive('process')
+            ->with('App', $type === 'psr0' ? 'psr-0' : 'psr-4')
+            ->andThrow(Exception\RuntimeException::class, 'Testing Exception Message')
+            ->once();
+
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
+        $this->setUpModule($modulesDir, 'App', $type);
+
+        $this->console
+            ->writeErrorMessage(
+                Argument::containingString('Testing Exception Message')
+            )
+            ->shouldBeCalled();
+        $this->assertNotHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
+
+        $this->injectCommand($this->command, 'my-command', MyTestingCommand::class);
+        $this->assertEquals(1, $this->command->process(['my-command', '--type', $type, 'App']));
+    }
+
+    /**
+     * @param Command $command
+     * @param string $cmd
+     * @param string $class
+     * @return void
+     */
+    protected function injectCommand(Command $command, $cmd, $class)
+    {
+        $rCommand = new \ReflectionObject($command);
+        $rp = $rCommand->getProperty('commands');
+        $rp->setAccessible(true);
+
+        $commands = $rp->getValue($command);
+        $commands[$cmd] = $class;
+
+        $rp->setValue($command, $commands);
     }
 
     public function validDisable()
@@ -507,380 +344,219 @@ class CommandTest extends TestCase
     }
 
     /**
-     * @dataProvider validEnable
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
-     * @param string $action
-     * @param string $modulesPath
+     * @dataProvider type
+     *
      * @param string $type
      */
-    public function testMessageOnEnableWhenModuleIsAlreadyEnabled($action, $modulesPath, $type)
+    public function testMessageOnEnableWhenModuleIsAlreadyEnabled($type)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson(
-            $dir,
-            ['autoload' => [$type === 'psr0' ? 'psr-0' : 'psr-4' => ['App\\' => 'path/to/module/src']]]
-        );
+        Mockery::mock('overload:' . Command\Enable::class)
+            ->shouldReceive('process')
+            ->with('App', null)
+            ->andReturn(false)
+            ->once();
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
+        $this->setUpModule($modulesDir, 'App', $type);
+
+        $this->console
             ->writeLine(
                 Argument::containingString('Autoloading rules already exist for the module "App"')
             )
             ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
+        $this->assertNotHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
+        $this->assertEquals(0, $this->command->process(['enable', 'App']));
     }
 
     /**
-     * @dataProvider validEnable
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
-     * @param string $action
-     * @param string $modulesPath
+     * @dataProvider type
+     *
      * @param string $type
      */
-    public function testSuccessMessageOnEnable($action, $modulesPath, $type)
+    public function testSuccessMessageOnEnable($type)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson(
-            $dir,
-            ['autoload' => [$type === 'psr0' ? 'psr-0' : 'psr-4' => ['App2\\' => 'app-2/path']]]
-        );
+        $mock = Mockery::mock('overload:' . Command\Enable::class);
+        $mock
+            ->shouldReceive('process')
+            ->with('App', null)
+            ->andReturn(true)
+            ->once();
+        $mock
+            ->shouldReceive('getMovedModuleClass')
+            ->withNoArgs()
+            ->andReturnNull()
+            ->once();
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
+        $this->setUpModule($modulesDir, 'App', $type);
+
+        $this->console
             ->writeLine(
                 Argument::containingString('Successfully added composer autoloading for the module "App"')
             )
             ->shouldBeCalled();
-        $console
+        $this->console
             ->writeLine(Argument::containingString(
                 'You can now safely remove the App\Module::getAutoloaderConfig() implementation'
             ))
             ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
+        $this->assertNotHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
-        $composerJson = json_decode(file_get_contents(vfsStream::url('project/composer.json')), true);
-        $this->assertCount(2, $composerJson['autoload'][$type === 'psr0' ? 'psr-0' : 'psr-4']);
-        $this->assertEquals('app-2/path', $composerJson['autoload'][$type === 'psr0' ? 'psr-0' : 'psr-4']['App2\\']);
-        $this->assertEquals(
-            sprintf('%s/App/src/', $modulesPath),
-            $composerJson['autoload'][$type === 'psr0' ? 'psr-0' : 'psr-4']['App\\']
-        );
+        $this->assertEquals(0, $this->command->process(['enable', 'App']));
     }
 
     /**
-     * @dataProvider validEnable
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
-     * @param string $action
-     * @param string $modulesPath
+     * @dataProvider type
+     *
      * @param string $type
      */
-    public function testSuccessMessageOnEnableAndModuleClassFileMoved($action, $modulesPath, $type)
+    public function testSuccessMessageOnEnableAndModuleClassFileMoved($type)
     {
-        $expectedComposerJson = <<< 'EOH'
-{
-    "autoload": {
-        "%s": {
-            "App\\": "%s/App/src/"
-        }
-    }
-}
+        $mock = Mockery::mock('overload:' . Command\Enable::class);
+        $mock
+            ->shouldReceive('process')
+            ->with('App', null)
+            ->andReturn(true)
+            ->once();
+        $mock
+            ->shouldReceive('getMovedModuleClass')
+            ->withNoArgs()
+            ->andReturn(['from-foo' => 'too-bar'])
+            ->once();
 
-EOH;
-
-        $expectedModuleFileContent = <<< 'EOH'
-<?php
-
-namespace App;
-
-class Module {
-    public function getConfigDir()
-    {
-        return __DIR__ . '/../config/';
-    }
-}
-
-EOH;
-
-        $moduleFileContent = <<< 'EOH'
-<?php
-
-namespace App;
-
-class Module {
-    public function getConfigDir()
-    {
-        return __DIR__ . '/config/';
-    }
-}
-
-EOH;
-
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
         $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson($dir, []);
-        $moduleFile = vfsStream::newFile('Module.php')
-            ->withContent($moduleFileContent)
-            ->at($modulesDir->getChild('App'));
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeLine(Argument::containingString(
                 'Successfully added composer autoloading for the module "App"'
             ))
             ->shouldBeCalled();
-        $console
+        $this->console
             ->writeLine(Argument::containingString(
                 'You can now safely remove the App\Module::getAutoloaderConfig() implementation'
             ))
             ->shouldBeCalled();
-        $console
+        $this->console
             ->writeLine(Argument::containingString(
-                sprintf('Renaming %1$s/App/Module.php to %1$s/App/src/Module.php', $modulesDir->url())
+                'Renaming from-foo to too-bar'
             ))
             ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
+        $this->assertNotHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
-        $this->assertFileNotExists($moduleFile->url());
-        $newModuleFile = vfsStream::url(sprintf('project/%s/App/src/Module.php', $modulesPath));
-        $this->assertFileExists($newModuleFile);
-        $this->assertEquals($expectedModuleFileContent, file_get_contents($newModuleFile));
-        $this->assertEquals(
-            sprintf($expectedComposerJson, $type === 'psr0' ? 'psr-0' : 'psr-4', $modulesPath),
-            file_get_contents(vfsStream::url('project/composer.json'))
-        );
+        $this->assertEquals(0, $this->command->process(['enable', 'App']));
     }
 
     /**
-     * @dataProvider validEnable
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
-     * @param string $action
-     * @param string $modulesPath
+     * @dataProvider type
+     *
      * @param string $type
      */
-    public function testSuccessMessageOnEnableAndModuleClassIsNotMoved($action, $modulesPath, $type)
+    public function testMessageOnDisableWhenModulesIsAlreadyDisabled($type)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
+        Mockery::mock('overload:' . Command\Disable::class)
+            ->shouldReceive('process')
+            ->with('App', null)
+            ->andReturn(false)
+            ->once();
+
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
         $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson($dir, []);
-        $moduleFile = vfsStream::newFile('Module.php')
-            ->at($modulesDir->getChild('App'));
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeLine(Argument::containingString(
-                'Successfully added composer autoloading for the module "App"'
-            ))
-            ->shouldBeCalled();
-        $console
-            ->writeLine(Argument::containingString(
-                'You can now safely remove the App\Module::getAutoloaderConfig() implementation'
-            ))
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
-        $this->assertFileExists($moduleFile->url());
-        $newModuleFile = vfsStream::url(sprintf('project/%s/App/src/Module.php', $modulesPath));
-        $this->assertFileNotExists($newModuleFile);
-    }
-
-    /**
-     * @dataProvider validEnable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testSuccessMessageOnEnableAndNewTypeModuleClassExists($action, $modulesPath, $type)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson($dir, []);
-        $moduleFile = vfsStream::newFile('Module.php')
-            ->withContent('<?php' . "\n" . 'class Module {}')
-            ->at($modulesDir->getChild('App'));
-        $newModuleFile = vfsStream::newFile('Module.php')
-            ->at($modulesDir->getChild('App')->getChild('src'));
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
-            ->writeLine(Argument::containingString(
-                'Successfully added composer autoloading for the module "App"'
-            ))
-            ->shouldBeCalled();
-        $console
-            ->writeLine(Argument::containingString(
-                'You can now safely remove the App\Module::getAutoloaderConfig() implementation'
-            ))
-            ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
-        $this->assertFileExists($moduleFile->url());
-        $this->assertFileExists($newModuleFile->url());
-    }
-
-    /**
-     * @dataProvider validDisable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testMessageOnDisableWhenModulesIsAlreadyDisabled($action, $modulesPath, $type)
-    {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson($dir, []);
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeLine(
                 Argument::containingString('Autoloading rules already do not exist for the module "App"')
             )
             ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
+        $this->assertNotHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
+        $this->assertEquals(0, $this->command->process(['disable', 'App']));
     }
 
     /**
-     * @dataProvider validDisable
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
-     * @param string $action
-     * @param string $modulesPath
+     * @dataProvider type
+     *
      * @param string $type
      */
-    public function testSuccessMessageOnDisable($action, $modulesPath, $type)
+    public function testSuccessMessageOnDisable($type)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson(
-            $dir,
-            ['autoload' => [$type === 'psr0' ? 'psr-0' : 'psr-4' => ['App\\' => 'app/path']]]
-        );
+        Mockery::mock('overload:' . Command\Disable::class)
+            ->shouldReceive('process')
+            ->with('App', null)
+            ->andReturn(true)
+            ->once();
 
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $modulesDir = vfsStream::newDirectory('module')->at($this->dir);
+        $this->setUpModule($modulesDir, 'App', $type);
+
+        $this->console
             ->writeLine(
                 Argument::containingString('Successfully removed composer autoloading for the module "App"')
             )
             ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
+        $this->assertNotHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
-        $composerJson = json_decode(file_get_contents(vfsStream::url('project/composer.json')), true);
-        $this->assertArrayNotHasKey('autoload', $composerJson);
+        $this->assertEquals(0, $this->command->process(['disable', 'App']));
     }
 
-    /**
-     * @dataProvider validDisable
-     *
-     * @param string $action
-     * @param string $modulesPath
-     * @param string $type
-     */
-    public function testDisableCommandDisableOnlyProvidedModule($action, $modulesPath, $type)
+    protected function assertHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
     {
-        $dir = vfsStream::setup('project');
-        $modulesDir = vfsStream::newDirectory($modulesPath)->at($dir);
-        $this->setUpModule($modulesDir, 'App', $type);
-        $this->setUpComposerJson(
-            $dir,
-            [
-                'autoload' => [
-                    $type === 'psr0' ? 'psr-0' : 'psr-4' => [
-                        'App\\' => 'app/path',
-                        'App2\\' => 'app2/path',
-                    ],
-                ],
-            ]
-        );
-
-        $console = $this->prophesize(ConsoleHelper::class);
-        $console
+        $this->console
             ->writeLine(
-                Argument::containingString('Successfully removed composer autoloading for the module "App"')
+                Argument::containingString($command . ' [command] [options] modulename'),
+                true,
+                $resource
             )
             ->shouldBeCalled();
-        $this->assertNotHelpOutput($console, STDERR);
-
-        $command = new Command(self::TEST_COMMAND_NAME, $console->reveal());
-        $this->setProjectDir($command, vfsStream::url('project'));
-        $result = $command->process([$action, '--modules-path', $modulesPath, 'App']);
-        $this->assertEquals(0, $result);
-        $composerJson = json_decode(file_get_contents(vfsStream::url('project/composer.json')), true);
-        $this->assertCount(1, $composerJson['autoload'][$type === 'psr0' ? 'psr-0' : 'psr-4']);
-        $this->assertEquals('app2/path', $composerJson['autoload'][$type === 'psr0' ? 'psr-0' : 'psr-4']['App2\\']);
     }
 
-    /**
-     * @param vfsStreamContainer $modulesDir
-     * @param string $name
-     * @param string $type
-     * @return void
-     */
-    protected function setUpModule(vfsStreamContainer $modulesDir, $name, $type)
+    protected function assertNotHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
     {
-        vfsStream::newDirectory(sprintf('%s/src/%s', $name, $type === 'psr0' ? $name : ''))->at($modulesDir);
+        $this->console
+            ->writeLine(
+                Argument::containingString($command . ' [command] [options] modulename'),
+                true,
+                $resource
+            )
+            ->shouldNotBeCalled();
     }
 
-    /**
-     * @param vfsStreamContainer $dir
-     * @param array|null $content
-     * @return void
-     */
-    protected function setUpComposerJson(vfsStreamContainer $dir, array $content = null)
+    protected function assertComposerBinaryNotExecutable()
     {
-        vfsStream::newFile('composer.json')
-            ->withContent(json_encode($content))
-            ->at($dir);
+        $exec = $this->getFunctionMock('ZF\ComposerAutoloading', 'exec');
+        $exec->expects($this->once())->willReturnCallback(function ($command, &$output, &$retValue) {
+            $this->assertEquals('composer 2>&1', $command);
+            $retValue = 1;
+        });
     }
 
-    /**
-     * @param Command $command
-     * @param string $dir
-     * @return void
-     */
-    protected function setProjectDir(Command $command, $dir)
+    protected function assertComposerBinaryExecutable()
     {
-        $rc = new \ReflectionObject($command);
-        $rp = $rc->getProperty('projectDir');
-        $rp->setAccessible(true);
-        $rp->setValue($command, $dir);
+        $exec = $this->getFunctionMock('ZF\ComposerAutoloading', 'exec');
+        $exec->expects($this->once())->willReturnCallback(function ($command, &$output, &$retValue) {
+            $this->assertEquals('composer 2>&1', $command);
+            $retValue = 0;
+        });
     }
 }

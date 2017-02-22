@@ -63,14 +63,14 @@ abstract class AbstractCommand
      * @return bool
      * @throws Exception\RuntimeException
      */
-    public function __invoke($moduleName, $type = null)
+    public function process($moduleName, $type = null)
     {
         $this->moduleName = $moduleName;
         $this->modulePath = sprintf('%s/%s/%s', $this->projectDir, $this->modulesPath, $moduleName);
         $this->type = $type ?: $this->autodiscoverModuleType();
         $this->composerPackage = $this->getComposerJson();
 
-        $content = $this->process();
+        $content = $this->execute();
 
         if ($content !== false) {
             $this->writeJsonFileAndDumpAutoloader($content);
@@ -174,7 +174,6 @@ abstract class AbstractCommand
 
     /**
      * @return false|string
-     * @throws Exception\RuntimeException
      */
-    abstract protected function process();
+    abstract protected function execute();
 }
