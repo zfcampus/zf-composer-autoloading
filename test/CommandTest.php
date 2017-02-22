@@ -7,6 +7,7 @@
 namespace ZFTest\ComposerAutoloading;
 
 use Mockery;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
@@ -18,6 +19,7 @@ use ZF\ComposerAutoloading\Exception;
 
 class CommandTest extends TestCase
 {
+    use MockeryPHPUnitIntegration;
     use ProjectSetupTrait;
 
     const TEST_COMMAND_NAME = 'zf-composer-autoloading';
