@@ -26,7 +26,7 @@
         "zendframework/zend-stdlib": "^3.1"
     },
     "require-dev": {
-        "mikey179/vfsStream": "^1.6",
+        "mikey179/vfsStream": "^1.6.4",
         "mockery/mockery": "^0.9.8",
         "php-mock/php-mock-phpunit": "^2.0 || ^1.1.2",
         "phpunit/phpunit": "^6.0.7 || ^5.7.14",
