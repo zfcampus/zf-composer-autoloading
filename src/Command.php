@@ -414,7 +414,7 @@ EOH;
         $type = $this->type;
         $module = $this->module;
 
-        $composerPackage['autoload'][$type][$module . '\\'] = sprintf('module/%s/src/', $module);
+        $composerPackage['autoload'][$type][$module . '\\'] = sprintf('%s/%s/src/', $this->modulesPath, $module);
         file_put_contents($this->composerJsonFile, json_encode(
             $composerPackage,
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
