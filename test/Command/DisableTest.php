@@ -43,8 +43,6 @@ class DisableTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
-     *
      * @dataProvider type
      *
      * @param string $type
