@@ -15,7 +15,7 @@ The `zf-composer-autoloading` package provides a single vendor binary,
 - `disable` - remove autoloading rules for the module from
   `composer.json`
 
-Both command also dump the autoloading rules on completion.
+Both commands also dump the autoloading rules on completion.
 
 Installation
 ------------
@@ -25,6 +25,8 @@ Run the following `composer` command:
 ```console
 $ composer require --dev "zfcampus/zf-composer-autoloading"
 ```
+
+Note the `--dev` flag; this tool is intended for use in development only.
 
 Usage
 -----
@@ -62,8 +64,9 @@ $ ./vendor/bin/zf-composer-autoloading \
 - Modules are assumed to have a `src/` directory. If they do not, the
   autoloading generated will be incorrect.
 - If unable to determine the autoloading type, PSR-0 will be assumed.
-- On enabling autoloading if the `Module` class file for the module
-  is in the module root, it will be moved to the module's `src/` directory.
+- On enabling autoloading, if the `Module` class file for the module
+  is in the module root, it will be moved to the module's `src/` directory
+  (zend-mvc applications only).
 
 Examples
 --------
