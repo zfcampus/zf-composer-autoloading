@@ -7,8 +7,7 @@
         "autoloading",
         "console",
         "framework",
-        "zendframework",
-        "zf3"
+        "zendframework"
     ],
     "homepage": "http://apigility.org/",
     "support": {
