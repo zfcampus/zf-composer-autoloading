@@ -61,7 +61,7 @@ class Command
      */
     public function __construct($command = self::DEFAULT_COMMAND_NAME, ConsoleHelper $console = null)
     {
-        $this->command = (string)$command;
+        $this->command = (string) $command;
         $this->console = $console ?: new ConsoleHelper();
     }
 
