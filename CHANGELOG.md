@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file, in reverse chronological order by release.
 
+## 2.0.0 - 2017-02-22
+
+### Added
+
+- [#8](https://github.com/zfcampus/zf-composer-autoloading/pull/8) extracts the classes
+  `ZF\ComposerAutoloading\Help`, `ZF\ComposerAutoloading\Command\Enable`, and
+  `ZF\ComposerAutoloading\Command\Disable` from the `ZF\ComposerAutoloading\Command` class,
+  which now delegates to each of them to perform its tasks.
+
+### Changes
+
+- [#8](https://github.com/zfcampus/zf-composer-autoloading/pull/8) renames the
+  script from `autoload-module-via-composer` to `zf-composer-autoloading`.
+
+- [#8](https://github.com/zfcampus/zf-composer-autoloading/pull/8) renames the
+  `Command::__invoke()` method to `Command::process()`.
+
+- [#8](https://github.com/zfcampus/zf-composer-autoloading/pull/8) adds a dependency
+  on zend-stdlib in order to facilitate colorized console reporting, and allow
+  testing.
+
+### Deprecated
+
+- Nothing.
+
+### Removed
+
+- Nothing.
+
+### Fixed
+
+- Nothing.
+
 ## 1.1.1 - 2017-02-22
 
 ### Added
