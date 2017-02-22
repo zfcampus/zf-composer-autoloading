@@ -23,6 +23,10 @@ All notable changes to this project will be documented in this file, in reverse 
   was hard-coded, and did not take into account the `-p`/`--modules-path`
   argument created in [#2](https://github.com/zfcampus/zf-composer-autoloading/pull/2).
 
+- [#6](https://github.com/zfcampus/zf-composer-autoloading/pull/6) adds
+  validation for the number of arguments, ensuring that no flags have empty
+  values.
+
 ## 1.1.0 - 2017-02-16
 
 ### Added
