@@ -288,7 +288,7 @@ class CommandTest extends TestCase
      *
      * @param string $type
      */
-    public function testErrorIfComposerJsonDoesNotExist($type)
+    public function testErrorMessageWhenActionProcessThrowsException($type)
     {
         Mockery::mock('overload:' . MyTestingCommand::class)
             ->shouldReceive('process')
