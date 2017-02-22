@@ -21,7 +21,7 @@ class HelpTest extends TestCase
         $console
             ->writeLine(
                 Argument::that(function ($message) {
-                    return false !== strpos($message, 'composer-autoloading');
+                    return false !== strpos($message, 'zf-composer-autoloading');
                 }),
                 true,
                 $resource
@@ -29,7 +29,7 @@ class HelpTest extends TestCase
             ->shouldBeCalled();
 
         $command = new Help(
-            'composer-autoloading',
+            'zf-composer-autoloading',
             $console->reveal()
         );
 

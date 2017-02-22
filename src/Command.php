@@ -10,7 +10,7 @@ use Zend\Stdlib\ConsoleHelper;
 
 class Command
 {
-    const DEFAULT_COMMAND_NAME = 'composer-autoloading';
+    const DEFAULT_COMMAND_NAME = 'zf-composer-autoloading';
 
     /**
      * @var string

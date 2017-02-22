@@ -43,7 +43,7 @@
         }
     },
     "bin": [
-        "bin/composer-autoloading"
+        "bin/zf-composer-autoloading"
     ],
     "scripts": {
         "check": [

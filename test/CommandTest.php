@@ -20,7 +20,7 @@ class CommandTest extends TestCase
 {
     use ProjectSetupTrait;
 
-    const TEST_COMMAND_NAME = 'composer-autoloading';
+    const TEST_COMMAND_NAME = 'zf-composer-autoloading';
 
     /** @var vfsStreamDirectory */
     private $dir;

@@ -8,7 +8,7 @@ Introduction
 ------------
 
 The `zf-composer-autoloading` package provides a single vendor binary,
-`composer-autoloading`, which provides following commands:
+`zf-composer-autoloading`, which provides following commands:
 
 - `enable` - add the named module to the project autoloading rules
   defined in `composer.json`, and
@@ -30,7 +30,7 @@ Usage
 -----
 
 ```bash
-$ ./vendor/bin/composer-autoloading \
+$ ./vendor/bin/zf-composer-autoloading \
 > enable|disable \
 > [help|--help|-h] \
 > [--composer|-c <composer path>] \
@@ -72,40 +72,40 @@ Examples
    entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/composer-autoloading enable Status
+   $ ./vendor/bin/zf-composer-autoloading enable Status
    ```
    
 1. Autodetect a module's autoloading type, and remove a Composer autoloading
    entry for "Status" module.
    
    ```bash
-   $ ./vendor/bin/composer-autoloading disable Status
+   $ ./vendor/bin/zf-composer-autoloading disable Status
    ```
 
 1. Specify PSR-0 for the module type, and generate a Composer autoloading
    entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/composer-autoloading enable --type psr0 Status
+   $ ./vendor/bin/zf-composer-autoloading enable --type psr0 Status
    ```
 
 1. Specify PSR-4 for the module type, and generate a Composer autoloading
    entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/composer-autoloading enable --type psr4 Status
+   $ ./vendor/bin/zf-composer-autoloading enable --type psr4 Status
    ```
 
 1. Specify the path to the composer binary when generating autoloading entry
    for "Status" module:
 
    ```bash
-   $ ./vendor/bin/composer-autoloading enable -c composer.phar Status
+   $ ./vendor/bin/zf-composer-autoloading enable -c composer.phar Status
    ```
 
 1. Specify the path to modules directory, and generate a Composer autoloading
    entry for "Status" module.
 
    ```bash
-   $ ./vendor/bin/composer-autoloading enable -p src Status
+   $ ./vendor/bin/zf-composer-autoloading enable -p src Status
    ```
