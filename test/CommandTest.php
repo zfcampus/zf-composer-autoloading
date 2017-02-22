@@ -514,7 +514,7 @@ class CommandTest extends TestCase
         $this->assertEquals(0, $this->command->process(['disable', 'App']));
     }
 
-    protected function assertHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
+    private function assertHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
     {
         $this->console
             ->writeLine(
@@ -525,7 +525,7 @@ class CommandTest extends TestCase
             ->shouldBeCalled();
     }
 
-    protected function assertNotHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
+    private function assertNotHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
     {
         $this->console
             ->writeLine(
@@ -536,7 +536,7 @@ class CommandTest extends TestCase
             ->shouldNotBeCalled();
     }
 
-    protected function assertComposerBinaryNotExecutable()
+    private function assertComposerBinaryNotExecutable()
     {
         $exec = $this->getFunctionMock('ZF\ComposerAutoloading', 'exec');
         $exec->expects($this->once())->willReturnCallback(function ($command, &$output, &$retValue) {
@@ -545,7 +545,7 @@ class CommandTest extends TestCase
         });
     }
 
-    protected function assertComposerBinaryExecutable()
+    private function assertComposerBinaryExecutable()
     {
         $exec = $this->getFunctionMock('ZF\ComposerAutoloading', 'exec');
         $exec->expects($this->once())->willReturnCallback(function ($command, &$output, &$retValue) {
