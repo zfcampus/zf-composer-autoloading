@@ -338,6 +338,7 @@ class CommandTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
      * @dataProvider type
      *
@@ -367,6 +368,7 @@ class CommandTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
      * @dataProvider type
      *
@@ -407,6 +409,7 @@ class CommandTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
      * @dataProvider type
      *
@@ -452,6 +455,7 @@ class CommandTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
      * @dataProvider type
      *
@@ -481,6 +485,7 @@ class CommandTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
      * @dataProvider type
      *
