@@ -335,14 +335,6 @@ class CommandTest extends TestCase
         $rp->setValue($command, $commands);
     }
 
-    public function validDisable()
-    {
-        return [
-            'disable-psr0' => ['disable', 'modules', 'psr0'],
-            'disable-psr4' => ['disable', 'sources', 'psr4'],
-        ];
-    }
-
     /**
      * @runInSeparateProcess
      * @preserveGlobalState disabled
