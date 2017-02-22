@@ -13,6 +13,7 @@ use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
+use ReflectionObject;
 use Zend\Stdlib\ConsoleHelper;
 use ZF\ComposerAutoloading\Command;
 use ZF\ComposerAutoloading\Exception;
@@ -310,24 +311,6 @@ class CommandTest extends TestCase
     }
 
     /**
-     * @param Command $command
-     * @param string $cmd
-     * @param string $class
-     * @return void
-     */
-    protected function injectCommand(Command $command, $cmd, $class)
-    {
-        $rCommand = new \ReflectionObject($command);
-        $rp = $rCommand->getProperty('commands');
-        $rp->setAccessible(true);
-
-        $commands = $rp->getValue($command);
-        $commands[$cmd] = $class;
-
-        $rp->setValue($command, $commands);
-    }
-
-    /**
      * @runInSeparateProcess
      * @preserveGlobalState disabled
      *
@@ -496,12 +479,30 @@ class CommandTest extends TestCase
 
     /**
      * @param Command $command
+     * @param string $cmd
+     * @param string $class
+     * @return void
+     */
+    private function injectCommand(Command $command, $cmd, $class)
+    {
+        $rCommand = new ReflectionObject($command);
+        $rp = $rCommand->getProperty('commands');
+        $rp->setAccessible(true);
+
+        $commands = $rp->getValue($command);
+        $commands[$cmd] = $class;
+
+        $rp->setValue($command, $commands);
+    }
+
+    /**
+     * @param Command $command
      * @param string $dir
      * @return void
      */
-    protected function setProjectDir(Command $command, $dir)
+    private function setProjectDir(Command $command, $dir)
     {
-        $rc = new \ReflectionObject($command);
+        $rc = new ReflectionObject($command);
         $rp = $rc->getProperty('projectDir');
         $rp->setAccessible(true);
         $rp->setValue($command, $dir);
