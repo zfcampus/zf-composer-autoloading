@@ -18,7 +18,10 @@ All notable changes to this project will be documented in this file, in reverse 
 
 ### Fixed
 
-- Nothing.
+- [#5](https://github.com/zfcampus/zf-composer-autoloading/pull/5) fixes how
+  the command creates the path to the module source directory; previously, it
+  was hard-coded, and did not take into account the `-p`/`--modules-path`
+  argument created in [#2](https://github.com/zfcampus/zf-composer-autoloading/pull/2).
 
 ## 1.1.0 - 2017-02-16
 
