@@ -74,19 +74,6 @@ EOM;
     }
 
     /**
-     * @param Command $command
-     * @param string $dir
-     * @return void
-     */
-    protected function setProjectDir(Command $command, $dir)
-    {
-        $rc = new \ReflectionObject($command);
-        $rp = $rc->getProperty('projectDir');
-        $rp->setAccessible(true);
-        $rp->setValue($command, $dir);
-    }
-
-    /**
      * @return void
      */
     private function assertComposerDumpAutoload()

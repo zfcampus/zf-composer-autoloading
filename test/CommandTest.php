@@ -119,9 +119,7 @@ class CommandTest extends TestCase
     public function testUnknownCommandEmitsHelpToStderrWithErrorMessage()
     {
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Unknown command')
-            )
+            ->writeErrorMessage(Argument::containingString('Unknown command'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
 
@@ -144,9 +142,7 @@ class CommandTest extends TestCase
     public function testCommandErrorIfNoModuleNameProvided($action)
     {
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Invalid module name')
-            )
+            ->writeErrorMessage(Argument::containingString('Invalid module name'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
 
@@ -161,9 +157,7 @@ class CommandTest extends TestCase
     public function testCommandErrorIfInvalidNumberOfArgumentsProvided($action)
     {
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Invalid arguments')
-            )
+            ->writeErrorMessage(Argument::containingString('Invalid arguments'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
 
@@ -178,9 +172,7 @@ class CommandTest extends TestCase
     public function testCommandErrorIfUnknownArgumentProvided($action)
     {
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Unknown argument "--invalid" provided')
-            )
+            ->writeErrorMessage(Argument::containingString('Unknown argument "--invalid" provided'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
 
@@ -188,6 +180,9 @@ class CommandTest extends TestCase
     }
 
     /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     *
      * @dataProvider action
      *
      * @param string $action
@@ -195,16 +190,18 @@ class CommandTest extends TestCase
     public function testCommandErrorIfModulesDirectoryDoesNotExist($action)
     {
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Unable to determine modules directory')
-            )
+            ->writeErrorMessage(Argument::containingString('Unable to determine modules directory'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
         $this->assertEquals(1, $this->command->process([$action, 'module-name']));
     }
 
     /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     *
      * @dataProvider action
      *
      * @param string $action
@@ -214,17 +211,17 @@ class CommandTest extends TestCase
         vfsStream::newDirectory('module')->at($this->dir);
 
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Could not locate module "module-name"')
-            )
+            ->writeErrorMessage(Argument::containingString('Could not locate module "module-name"'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
+        $this->assertComposerBinaryExecutable();
 
         $this->assertEquals(1, $this->command->process([$action, 'module-name']));
     }
 
     /**
      * @runInSeparateProcess
+     * @preserveGlobalState disabled
      *
      * @dataProvider action
      *
@@ -237,9 +234,7 @@ class CommandTest extends TestCase
         $this->setUpComposerJson($this->dir, []);
 
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Unable to determine composer binary')
-            )
+            ->writeErrorMessage(Argument::containingString('Unable to determine composer binary'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
         $this->assertComposerBinaryNotExecutable();
@@ -270,9 +265,7 @@ class CommandTest extends TestCase
         $this->setUpComposerJson($this->dir, []);
 
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Invalid type provided; must be one of psr0 or psr4')
-            )
+            ->writeErrorMessage(Argument::containingString('Invalid type provided; must be one of psr0 or psr4'))
             ->shouldBeCalled();
         $this->assertHelpOutput(STDERR);
 
@@ -307,9 +300,7 @@ class CommandTest extends TestCase
         $this->setUpModule($modulesDir, 'App', $type);
 
         $this->console
-            ->writeErrorMessage(
-                Argument::containingString('Testing Exception Message')
-            )
+            ->writeErrorMessage(Argument::containingString('Testing Exception Message'))
             ->shouldBeCalled();
         $this->assertNotHelpOutput(STDERR);
         $this->assertComposerBinaryExecutable();
@@ -356,9 +347,7 @@ class CommandTest extends TestCase
         $this->setUpModule($modulesDir, 'App', $type);
 
         $this->console
-            ->writeLine(
-                Argument::containingString('Autoloading rules already exist for the module "App"')
-            )
+            ->writeLine(Argument::containingString('Autoloading rules already exist for the module "App"'))
             ->shouldBeCalled();
         $this->assertNotHelpOutput(STDERR);
         $this->assertComposerBinaryExecutable();
@@ -392,9 +381,7 @@ class CommandTest extends TestCase
         $this->setUpModule($modulesDir, 'App', $type);
 
         $this->console
-            ->writeLine(
-                Argument::containingString('Successfully added composer autoloading for the module "App"')
-            )
+            ->writeLine(Argument::containingString('Successfully added composer autoloading for the module "App"'))
             ->shouldBeCalled();
         $this->console
             ->writeLine(Argument::containingString(
@@ -433,9 +420,7 @@ class CommandTest extends TestCase
         $this->setUpModule($modulesDir, 'App', $type);
 
         $this->console
-            ->writeLine(Argument::containingString(
-                'Successfully added composer autoloading for the module "App"'
-            ))
+            ->writeLine(Argument::containingString('Successfully added composer autoloading for the module "App"'))
             ->shouldBeCalled();
         $this->console
             ->writeLine(Argument::containingString(
@@ -443,9 +428,7 @@ class CommandTest extends TestCase
             ))
             ->shouldBeCalled();
         $this->console
-            ->writeLine(Argument::containingString(
-                'Renaming from-foo to too-bar'
-            ))
+            ->writeLine(Argument::containingString('Renaming from-foo to too-bar'))
             ->shouldBeCalled();
         $this->assertNotHelpOutput(STDERR);
         $this->assertComposerBinaryExecutable();
@@ -473,9 +456,7 @@ class CommandTest extends TestCase
         $this->setUpModule($modulesDir, 'App', $type);
 
         $this->console
-            ->writeLine(
-                Argument::containingString('Autoloading rules already do not exist for the module "App"')
-            )
+            ->writeLine(Argument::containingString('Autoloading rules already do not exist for the module "App"'))
             ->shouldBeCalled();
         $this->assertNotHelpOutput(STDERR);
         $this->assertComposerBinaryExecutable();
@@ -511,6 +492,19 @@ class CommandTest extends TestCase
         $this->assertComposerBinaryExecutable();
 
         $this->assertEquals(0, $this->command->process(['disable', 'App']));
+    }
+
+    /**
+     * @param Command $command
+     * @param string $dir
+     * @return void
+     */
+    protected function setProjectDir(Command $command, $dir)
+    {
+        $rc = new \ReflectionObject($command);
+        $rp = $rc->getProperty('projectDir');
+        $rp->setAccessible(true);
+        $rp->setValue($command, $dir);
     }
 
     private function assertHelpOutput($resource = STDOUT, $command = self::TEST_COMMAND_NAME)
