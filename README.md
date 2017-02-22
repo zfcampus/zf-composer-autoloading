@@ -17,6 +17,12 @@ The `zf-composer-autoloading` package provides a single vendor binary,
 
 Both commands also dump the autoloading rules on completion.
 
+> ### Upgrading
+>
+> If you were using the v1 series of this component, the script previously
+> exposed was `autoload-module-via-composer`. That script is now renamed
+> to `zf-composer-autoloading`.
+
 Installation
 ------------
 
