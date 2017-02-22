@@ -27,6 +27,10 @@ All notable changes to this project will be documented in this file, in reverse 
   validation for the number of arguments, ensuring that no flags have empty
   values.
 
+- [#7](https://github.com/zfcampus/zf-composer-autoloading/pull/7) adds
+  validation of the composer binary in a cross-platform way; an exception is
+  now raised if it is not executable.
+
 ## 1.1.0 - 2017-02-16
 
 ### Added

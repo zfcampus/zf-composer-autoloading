@@ -230,10 +230,6 @@ EOH;
         $this->module = $module = array_pop($args);
 
         // Parse arguments
-        if (empty($args)) {
-            return $this->checkModulePath();
-        }
-
         $args = array_values($args);
         $count = count($args);
 
@@ -249,14 +245,6 @@ EOH;
                     // fall-through
                 case '-c':
                     $this->composer = $args[$i + 1];
-                    if (! is_executable($this->composer)) {
-                        fwrite(
-                            STDERR,
-                            'Provided composer binary does not exist or is not executable' . PHP_EOL . PHP_EOL
-                        );
-                        $this->help(STDERR);
-                        return false;
-                    }
                     break;
 
                 case '--type':
@@ -276,15 +264,6 @@ EOH;
                     // fall-through
                 case '-p':
                     $this->modulesPath = preg_replace('/^\.\//', '', str_replace('\\', '/', $args[$i + 1]));
-                    if (! is_dir(sprintf('%s/%s', $this->path, $this->modulesPath))) {
-                        fwrite(
-                            STDERR,
-                            'Provided path to modules directory does not exist or is not a directory'
-                            . PHP_EOL . PHP_EOL
-                        );
-                        $this->help(STDERR);
-                        return false;
-                    }
                     break;
 
                 default:
@@ -294,17 +273,40 @@ EOH;
             }
         }
 
-        return $this->checkModulePath();
+        $this->modulePath = sprintf('%s/%s/%s', $this->path, $this->modulesPath, $this->module);
+
+        return $this->checkArguments();
     }
 
     /**
-     * Checks if the module path exists and is a directory.
+     * Checks if arguments of the script are correct.
      *
      * @return bool
      */
-    private function checkModulePath()
+    private function checkArguments()
     {
-        $this->modulePath = sprintf('%s/%s/%s', $this->path, $this->modulesPath, $this->module);
+        $output = [];
+        $returnVar = null;
+        exec($this->composer, $output, $returnVar);
+
+        if ($returnVar !== 0) {
+            fwrite(
+                STDERR,
+                'Provided composer binary does not exist or is not executable' . PHP_EOL . PHP_EOL
+            );
+            $this->help(STDERR);
+            return false;
+        }
+
+        if (! is_dir(sprintf('%s/%s', $this->path, $this->modulesPath))) {
+            fwrite(
+                STDERR,
+                'Provided path to modules directory does not exist or is not a directory'
+                . PHP_EOL . PHP_EOL
+            );
+            $this->help(STDERR);
+            return false;
+        }
 
         if (! is_dir($this->modulePath)) {
             fwrite(
