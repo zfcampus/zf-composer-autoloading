@@ -6,33 +6,44 @@
 
 namespace ZF\ComposerAutoloading;
 
+use Zend\Stdlib\ConsoleHelper;
+
 class Command
 {
-    /**
-     * @var string Composer binary name/location
-     */
-    private $composer;
+    const DEFAULT_COMMAND_NAME = 'zf-composer-autoloading';
 
     /**
-     * Default argument values.
-     *
-     * @param array
+     * @var string
      */
-    private $defaults = [
-        'composer' => 'composer',
-        'type' => false,
-        'modulesPath' => 'module',
+    private $projectDir = '.';
+
+    /**
+     * @var string[]
+     */
+    private $commands = [
+        'disable' => Command\Disable::class,
+        'enable' => Command\Enable::class,
     ];
 
     /**
-     * @var string Path to composer.json
+     * @var array
      */
-    private $composerJsonFile;
+    private $helpArgs = ['--help', '-h', 'help'];
 
     /**
-     * @var array Parsed composer.json contents
+     * @var string Composer binary name/location
      */
-    private $composerPackage;
+    private $composer = 'composer';
+
+    /**
+     * @var string One of psr-0 or psr-4
+     */
+    private $type;
+
+    /**
+     * @var string Filesystem path to modules directory
+     */
+    private $modulesPath = 'module';
 
     /**
      * @var string Module name
@@ -45,164 +56,138 @@ class Command
     private $modulePath;
 
     /**
-     * @var string Filesystem path to modules directory
+     * @param string $command
+     * @param null|ConsoleHelper $console
      */
-    private $modulesPath;
-
-    /**
-     * @var string Working path
-     */
-    private $path;
-
-    /**
-     * @var string One of psr-0 or psr-4
-     */
-    private $type;
-
-    /**
-     * @var string $path
-     */
-    public function __construct($path)
+    public function __construct($command = self::DEFAULT_COMMAND_NAME, ConsoleHelper $console = null)
     {
-        $this->path = $path;
-        $this->composerJsonFile = sprintf('%s/composer.json', $path);
+        $this->command = (string)$command;
+        $this->console = $console ?: new ConsoleHelper();
     }
 
     /**
-     * Invoke the command.
+     * Process the command.
      *
      * Facade method that performs all tasks related to the command.
      *
      * @param array $args
      * @return int Exit status
      */
-    public function __invoke(array $args)
+    public function process(array $args)
     {
-        $this->setDefaultArguments();
-
-        if ($this->helpRequested($args)) {
-            $this->help();
-            return 0;
+        if ($this->isHelpRequest($args)) {
+            return $this->showHelp();
         }
 
-        if (! $this->validateComposerJson()
-            || ! $this->parseArguments($args)
-            || ! $this->autodiscoverModuleType()
-        ) {
+        $command = $this->getCommand(array_shift($args));
+        if (false === $command) {
+            $this->console->writeErrorMessage('Unknown command');
+            return $this->showHelp(STDERR);
+        }
+
+        try {
+            $this->parseArguments($args);
+        } catch (Exception\InvalidArgumentException $ex) {
+            $this->console->writeErrorMessage($ex->getMessage());
+            return $this->showHelp(STDERR);
+        }
+
+        /** @var Command\AbstractCommand $instance */
+        $instance = new $command($this->projectDir, $this->modulesPath, $this->composer);
+
+        $isEnableCommand = $instance instanceof Command\Enable;
+
+        try {
+            if ($instance->process($this->module, $this->type)) {
+                if ($isEnableCommand && ($movedModuleClass = $instance->getMovedModuleClass())) {
+                    $src = key($movedModuleClass);
+                    $dest = reset($movedModuleClass);
+
+                    $this->console->writeLine(sprintf('Renaming %s to %s', $src, $dest));
+                }
+
+                $this->console->writeLine(sprintf(
+                    $isEnableCommand
+                        ? 'Successfully added composer autoloading for the module "%s"'
+                        : 'Successfully removed composer autoloading for the module "%s"',
+                    $this->module
+                ));
+
+                if ($isEnableCommand) {
+                    $this->console->writeLine(sprintf(
+                        'You can now safely remove the %s\\Module::getAutoloaderConfig() implementation.',
+                        $this->module
+                    ));
+                }
+            } else {
+                $this->console->writeLine(sprintf(
+                    $isEnableCommand
+                        ? 'Autoloading rules already exist for the module "%s"'
+                        : 'Autoloading rules already do not exist for the module "%s"',
+                    $this->module
+                ));
+            }
+        } catch (Exception\RuntimeException $ex) {
+            $this->console->writeErrorMessage($ex->getMessage());
             return 1;
         }
-
-        if ($this->autoloadingRulesExist()) {
-            return 0;
-        }
-
-        $this->moveModuleClassFile();
-        $this->updateAutoloadingRules();
-        $this->reportSuccess();
 
         return 0;
     }
 
     /**
-     * Emit the help message to the provided stream.
-     *
-     * @param resource $stream
-     * @return void
+     * @param string $cmd
+     * @return false|string
      */
-    private function help($stream = STDOUT)
+    private function getCommand($cmd)
     {
-        // @codingStandardsIgnoreStart
-        $message = <<<'EOH'
-Provide Composer-based autoloading for a Zend Framework module.
-
-Usage:
-
-  autoload-module-via-composer [help|--help|-h] [--composer|-c <composer path>] [--type|-t psr0|psr4] [--modules-path|-p <path>] modulename
-
-Arguments:
-
-  - [help|--help|-h]                    Display this help message.
-  - [--composer|-c <composer path>]     Provide the path to the composer
-                                        binary; defaults to "composer"
-  - [--type|-t <psr0|psr4>]             Provide the autoloading type to
-                                        use; if not provided, attempts to
-                                        autodetermine the type, default to
-                                        PSR-0 autoloading if unable to
-                                        determine it.
-  - [--modules-path|-p <path>]          Provide the path to the modules
-                                        directory; default to "module"
-  - modulename                          The name of the module for which
-                                        to provide composer autoloading.
-
-EOH;
-        // @codingStandardsIgnoreEnd
-
-        $message = strtr($message, "\n", PHP_EOL);
-
-        fwrite($stream, $message);
-    }
-
-    /**
-     * Set defaults before execution.
-     *
-     * @return void
-     */
-    public function setDefaultArguments()
-    {
-        foreach ($this->defaults as $property => $value) {
-            $this->{$property} = $value;
-        }
-    }
-
-    /**
-     * Was help requested?
-     *
-     * @param array $args
-     * @return bool
-     */
-    private function helpRequested(array $args)
-    {
-        // Check for no arguments, or a help argument
-        if (2 > count($args)) {
-            return true;
-        }
-
-        if (in_array($args[1], ['help', '--help', '-h'], true)) {
-            return true;
+        if (isset($this->commands[$cmd])) {
+            return $this->commands[$cmd];
         }
 
         return false;
     }
 
     /**
-     * Validate that the composer.json exists, is writable, and contains valid contents.
+     * Emits the help message to the provided stream.
      *
+     * @param resource $resource
+     * @return int
+     */
+    private function showHelp($resource = STDOUT)
+    {
+        $help = new Help($this->command, $this->console);
+        $help($resource);
+
+        return $resource === STDERR ? 1 : 0;
+    }
+
+    /**
+     * Is this a help request?
+     *
+     * @param array $args
      * @return bool
      */
-    private function validateComposerJson()
+    private function isHelpRequest(array $args)
     {
-        if (! is_readable($this->composerJsonFile)) {
-            fwrite(STDERR, 'composer.json file does not exist or is not readable' . PHP_EOL);
-            return false;
+        $numArgs = count($args);
+        if (0 === $numArgs) {
+            return true;
         }
-        if (! is_writable($this->composerJsonFile)) {
-            fwrite(STDERR, 'composer.json file is not writable' . PHP_EOL);
+
+        $arg = array_shift($args);
+
+        if (in_array($arg, $this->helpArgs, true)) {
+            return true;
+        }
+
+        if (empty($args)) {
             return false;
         }
 
-        $composerJson = file_get_contents($this->composerJsonFile);
-        $composerPackage = json_decode($composerJson, true);
-        if (! is_array($composerPackage)) {
-            $error = json_last_error();
-            $error = $error === JSON_ERROR_NONE
-                ? 'The composer.json file was empty'
-                : 'Error parsing composer.json file; please check that it is valid';
-            fwrite(STDERR, $error . PHP_EOL);
-            return false;
-        }
+        $arg = array_shift($args);
 
-        $this->composerPackage = $composerPackage;
-        return true;
+        return in_array($arg, $this->helpArgs, true);
     }
 
     /**
@@ -219,24 +204,23 @@ EOH;
      * Sets the module, modulePath, composer, type and modulesPath properties.
      *
      * @param array $args
-     * @return bool Boolean false if invalid arguments detected
+     * @return void
+     * @throws Exception\InvalidArgumentException If invalid argument detected.
      */
     private function parseArguments(array $args)
     {
-        // Remove script argument
-        array_shift($args);
-
         // Get module argument (always expected in last position)
-        $this->module = $module = array_pop($args);
+        $this->module = array_pop($args);
+        if (! $this->module) {
+            throw new Exception\InvalidArgumentException('Invalid module name');
+        }
 
         // Parse arguments
         $args = array_values($args);
         $count = count($args);
 
         if (0 !== $count % 2) {
-            fwrite(STDERR, 'Invalid arguments' . PHP_EOL . PHP_EOL);
-            $this->help(STDERR);
-            return false;
+            throw new Exception\InvalidArgumentException('Invalid arguments');
         }
 
         for ($i = 0; $i < $count; $i += 2) {
@@ -252,9 +236,9 @@ EOH;
                 case '-t':
                     $this->type = $args[$i + 1];
                     if (! in_array($this->type, ['psr0', 'psr4'], true)) {
-                        fwrite(STDERR, 'Invalid type provided; must be one of psr0 or psr4' . PHP_EOL . PHP_EOL);
-                        $this->help(STDERR);
-                        return false;
+                        throw new Exception\InvalidArgumentException(
+                            'Invalid type provided; must be one of psr0 or psr4'
+                        );
                     }
 
                     $this->type = preg_replace('/^(psr)([04])$/', '$1-$2', $this->type);
@@ -267,181 +251,48 @@ EOH;
                     break;
 
                 default:
-                    fwrite(STDERR, sprintf('Unknown option "%s" provided%s', $args[$i], str_repeat(PHP_EOL, 2)));
-                    $this->help(STDERR);
-                    return false;
+                    throw new Exception\InvalidArgumentException(sprintf(
+                        'Unknown argument "%s" provided',
+                        $args[$i]
+                    ));
             }
         }
 
-        $this->modulePath = sprintf('%s/%s/%s', $this->path, $this->modulesPath, $this->module);
+        $this->modulePath = sprintf('%s/%s/%s', $this->projectDir, $this->modulesPath, $this->module);
 
-        return $this->checkArguments();
+        $this->checkArguments();
     }
 
     /**
      * Checks if arguments of the script are correct.
      *
-     * @return bool
+     * @return void
+     * @throws Exception\InvalidArgumentException
      */
     private function checkArguments()
     {
         $output = [];
         $returnVar = null;
-        exec($this->composer, $output, $returnVar);
+        exec(sprintf('%s 2>&1', $this->composer), $output, $returnVar);
 
         if ($returnVar !== 0) {
-            fwrite(
-                STDERR,
-                'Provided composer binary does not exist or is not executable' . PHP_EOL . PHP_EOL
+            throw new Exception\InvalidArgumentException(
+                'Unable to determine composer binary'
             );
-            $this->help(STDERR);
-            return false;
         }
 
-        if (! is_dir(sprintf('%s/%s', $this->path, $this->modulesPath))) {
-            fwrite(
-                STDERR,
-                'Provided path to modules directory does not exist or is not a directory'
-                . PHP_EOL . PHP_EOL
+        if (! is_dir(sprintf('%s/%s', $this->projectDir, $this->modulesPath))) {
+            throw new Exception\InvalidArgumentException(
+                'Unable to determine modules directory'
             );
-            $this->help(STDERR);
-            return false;
         }
 
         if (! is_dir($this->modulePath)) {
-            fwrite(
-                STDERR,
-                sprintf('Could not locate module "%s" in path "%s"%s', $this->module, $this->modulePath, PHP_EOL)
-            );
-            return false;
+            throw new Exception\InvalidArgumentException(sprintf(
+                'Could not locate module "%s" in path "%s"',
+                $this->module,
+                $this->modulePath
+            ));
         }
-
-        return true;
-    }
-
-    /**
-     * Determine the autoloading type for the module.
-     *
-     * If passed as a flag, uses that.
-     *
-     * Otherwise, introspects the module tree to determine if PSR-0 or PSR-4 is
-     * being used.
-     *
-     * If the module tree does not include a src/ directory, returns false,
-     * indicating inability to autodiscover.
-     *
-     * Sets the type property on successful discovery.
-     *
-     * @return bool
-     */
-    private function autodiscoverModuleType()
-    {
-        if ($this->type) {
-            return true;
-        }
-
-        $psr0Spec = sprintf('%s/src/%s', $this->modulePath, $this->module);
-        if (is_dir($psr0Spec)) {
-            $this->type = 'psr-0';
-            return true;
-        }
-
-        $srcPath = sprintf('%s/src', $this->modulePath);
-        if (! is_dir($srcPath)) {
-            fwrite(STDERR, 'Unable to determine autoloading type; no src directory found in module' . PHP_EOL);
-            return false;
-        }
-
-        $this->type = 'psr-4';
-        return true;
-    }
-
-    /**
-     * Do autoloading rules already exist for this module?
-     *
-     * @return bool
-     */
-    private function autoloadingRulesExist()
-    {
-        if (! isset($this->composerPackage['autoload'][$this->type][$this->module . '\\'])) {
-            return false;
-        }
-
-        fwrite(STDOUT, sprintf(
-            'Autoloading rules already exist for the module "%s"%s',
-            $this->module,
-            PHP_EOL
-        ));
-        return true;
-    }
-
-    /**
-     * Moves the Module class file under the src tree, if necessary.
-     *
-     * @return void
-     */
-    private function moveModuleClassFile()
-    {
-        $moduleClassFile = sprintf('%s/Module.php', $this->modulePath);
-        if (! file_exists($moduleClassFile)) {
-            return;
-        }
-
-        $moduleClassContents = file_get_contents($moduleClassFile);
-        if (! preg_match('#\bclass Module\b#s', $moduleClassContents)) {
-            return;
-        }
-
-        $srcModuleClassFile = sprintf('%s/src/Module.php', $this->modulePath);
-        if (file_exists($srcModuleClassFile)) {
-            return;
-        }
-
-        fwrite(STDOUT, sprintf('Renaming %s to %s%s', $moduleClassFile, $srcModuleClassFile, PHP_EOL));
-        $moduleClassContents = preg_replace('#(__DIR__ \. \')(/config/)#', '$1/..$2', $moduleClassContents);
-        file_put_contents($srcModuleClassFile, $moduleClassContents);
-        unlink($moduleClassFile);
-    }
-
-    /**
-     * Update composer.json autoloading rules.
-     *
-     * Writes new rules to composer.json, and executes composer dump-autoload.
-     *
-     * @return void
-     */
-    private function updateAutoloadingRules()
-    {
-        $composerPackage = $this->composerPackage;
-        $type = $this->type;
-        $module = $this->module;
-
-        $composerPackage['autoload'][$type][$module . '\\'] = sprintf('%s/%s/src/', $this->modulesPath, $module);
-        file_put_contents($this->composerJsonFile, json_encode(
-            $composerPackage,
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-        ));
-
-        $command = sprintf('%s dump-autoload', $this->composer);
-        system($command);
-    }
-
-    /**
-     * Emit a success message.
-     *
-     * @return void
-     */
-    private function reportSuccess()
-    {
-        fwrite(STDOUT, sprintf(
-            'Successfully added composer autoloading for module "%s"%s',
-            $this->module,
-            str_repeat(PHP_EOL, 2)
-        ));
-        fwrite(STDOUT, sprintf(
-            'You can now safely remove the %s\\Module::getAutoloaderConfig() implementation.%s',
-            $this->module,
-            PHP_EOL
-        ));
     }
 }
