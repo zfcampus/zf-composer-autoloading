@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file, in reverse chronological order by release.
 
+## 2.1.0 - 2018-05-03
+
+### Added
+
+- [#10](https://github.com/zfcampus/zf-composer-autoloading/pull/10) adds support for PHP 7.2.
+
+### Changed
+
+- Nothing.
+
+### Deprecated
+
+- Nothing.
+
+### Removed
+
+- [#10](https://github.com/zfcampus/zf-composer-autoloading/pull/10) removes support for HHVM.
+
+### Fixed
+
+- Nothing.
+
 ## 2.0.0 - 2017-02-22
 
 ### Added
