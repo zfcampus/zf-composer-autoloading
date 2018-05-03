@@ -1,24 +1,20 @@
 {
     "name": "zfcampus/zf-composer-autoloading",
     "description": "Sets up Composer-based autoloading for your Zend Framework modules",
-    "type": "library",
     "license": "BSD-3-Clause",
     "keywords": [
+        "zf",
         "autoloading",
         "console",
         "framework",
         "zendframework"
     ],
-    "homepage": "http://apigility.org/",
     "support": {
-        "irc": "irc://irc.freenode.net/apigility",
+        "issues": "https://github.com/zfcampus/zf-composer-autoloading/issues",
         "source": "https://github.com/zfcampus/zf-composer-autoloading",
-        "issues": "https://github.com/zfcampus/zf-composer-autoloading/issues"
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "2.0-dev"
-        }
+        "rss": "https://github.com/zfcampus/zf-composer-autoloading/releases.atom",
+        "chat": "https://zendframework-slack.herokuapp.com",
+        "forum": "https://discourse.zendframework.com/c/questions/apigility"
     },
     "require": {
         "php": "^5.6 || ^7.0",
@@ -41,6 +37,15 @@
             "ZFTest\\ComposerAutoloading\\": "test/"
         }
     },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.0.x-dev",
+            "dev-develop": "2.1.x-dev"
+        }
+    },
     "bin": [
         "bin/zf-composer-autoloading"
     ],
@@ -52,7 +57,7 @@
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",
         "test": "phpunit --colors=always",
-        "test-coverage": "phpunit --coverage-clover clover.xml",
-        "upload-coverage": "coveralls -v"
-    }
+        "test-coverage": "phpunit --colors=always --coverage-clover clover.xml"
+    },
+    "homepage": "http://apigility.org/"
 }
