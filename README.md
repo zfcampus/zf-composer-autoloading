@@ -1,6 +1,10 @@
 zf-composer-autoloading
 =======================
 
+> ## Repository abandoned 2019-12-31
+>
+> This repository has moved to laminas/laminas-composer-autoloading.
+
 [![Build Status](https://secure.travis-ci.org/zfcampus/zf-composer-autoloading.svg?branch=master)](https://secure.travis-ci.org/zfcampus/zf-composer-autoloading)
 [![Coverage Status](https://coveralls.io/repos/github/zfcampus/zf-composer-autoloading/badge.svg?branch=master)](https://coveralls.io/github/zfcampus/zf-composer-autoloading?branch=master)
 
